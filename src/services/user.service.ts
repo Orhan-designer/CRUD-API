@@ -1,4 +1,4 @@
-import { ERR_USER_ID_INVALID, ERR_USER_NOT_FOUND, validationErrors } from './../app/constants';
+import { ERR_USER_ID_INVALID, ERR_USER_NOT_FOUND, validationErrors } from '../app/constants';
 import { IUser } from "../models/users.interface";
 import { validate } from "uuid";
 import { NotFoundError, ValidationError } from "../app/errors";

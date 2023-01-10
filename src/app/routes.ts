@@ -1,59 +1,105 @@
 import { IncomingMessage, ServerResponse } from "http";
-import { NotFoundError, ValidationError } from "./errors";
-import { UsersController } from "../users/users.controller";
-import { UsersService } from "../users/users.service";
-import { ERR_RESOURCE_NOT_FOUND, ERR_UNSUPPORTED_OPERATION } from "./constants";
+import url from "url";
+import { NotFoundError, ValidationError, UnsupportedMethodError } from "./errors";
+import { ERR_RESOURCE_NOT_FOUND, ERR_UNEXPECTED_ERROR, ERR_UNSUPPORTED_OPERATION } from "./constants";
+import { UserController } from "src/controllers/user.controller";
+import { UserService } from "src/services/user.service";
 
-const usersController = new UsersController(new UsersService())
+const usersService: UserService = new UserService();
+const usersController: UserController = new UserController(usersService);
 
-export const routes = async (req: IncomingMessage, res: ServerResponse) => {
-    console.log(req)
-    console.log(res)
-    console.log(`Worker ${process.pid} requested`);
+export default function routes(req: IncomingMessage, res: ServerResponse): void {
+    try {
+        res.setHeader("Content-Type", "application/json");
+        const data: Uint8Array[] = [];
 
-    res.setHeader("Content-Type", "application/json");
+        req.on("data", (chunk) => {
+            data.push(chunk);
+        });
 
-    const parts = req.url!.split('/').filter(Boolean);
-    const buffers = [] as any;
+        req.on("end", async () => {
+            const path: string = url.parse(req.url, true).pathname;
+            const [apiUrl, usersUrl, id, ...params]: string[] = path.split("/").filter((el) => el);
+            const reqUrl: string = `${apiUrl}/${usersUrl}`;
 
-    for await (let chunk of req) {
-        buffers.push(chunk)
-    }
+            if (reqUrl === "api/users" && !params.length) {
+                let status: number = 200;
+                let result: any;
 
-    const body = Buffer.concat(buffers).toString();
+                try {
+                    const body: any = data.length ? JSON.parse(Buffer.concat(data).toString()) : {};
+                    switch (req.method) {
+                        case "POST": {
+                            if (id) {
+                                throw new NotFoundError(ERR_RESOURCE_NOT_FOUND);
+                            }
+                            result = await usersController.createUser(body);
+                            status = 201;
+                            break;
+                        }
 
-    if (`${parts[0]}/${parts[1]}` === 'api/users' && !parts[3]) {
-        let result;
-        let statusCode = 200;
+                        case "GET": {
+                            if (id) {
+                                result = await usersController.getUserById(id);
+                            } else {
+                                result = await usersController.getAllUsers();
+                            }
+                            break;
+                        }
 
-        try {
-            switch (req.method) {
-                case 'POST':
-                    if (parts[2]) {
-                        throw new NotFoundError(ERR_RESOURCE_NOT_FOUND)
+                        case "PUT": {
+                            result = await usersController.editUser(body, id);
+                            status = 200;
+                            break;
+                        }
+
+                        case "DELETE": {
+                            result = await usersController.deleteUser(id);
+                            status = 204;
+                            break;
+                        }
+
+                        default: {
+                            throw new UnsupportedMethodError(ERR_UNSUPPORTED_OPERATION);
+                        }
+                    }
+                } catch (error: any) {
+                    let message: string = "";
+
+                    if (error instanceof NotFoundError) {
+                        status = 404;
+                    } else if (error instanceof ValidationError) {
+                        status = 400;
+                    } else if (error instanceof UnsupportedMethodError) {
+                        status = 405;
+                    } else {
+                        status = 500;
+                        message = ERR_UNEXPECTED_ERROR;
                     }
 
-                    result = await usersController.create(body);
-                    statusCode = 201;
-                    break;
+                    console.log(error.message);
+                    result = { code: status, message: message || error.message };
+                }
+                res.writeHead(status);
+                res.end(JSON.stringify(result));
+            } else {
+                res.writeHead(404);
+                res.end(
+                    JSON.stringify({
+                        code: 404,
+                        message: ERR_RESOURCE_NOT_FOUND,
+                    })
+                );
             }
-        } catch (error: any) {
-            if (error instanceof ValidationError) {
-                statusCode = 400;
-            } else if (error instanceof NotFoundError) {
-                statusCode = 404;
-            } else if (error instanceof Error) {
-                statusCode = 500;
-            }
-
-            result = { code: statusCode, message: error.message }
-        }
-
-        res.writeHead(statusCode);
-        res.end(JSON.stringify(result));
-
-    } else {
-        res.writeHead(404);
-        res.end(JSON.stringify({ code: 404, message: ERR_RESOURCE_NOT_FOUND }));
+        });
+    } catch (error: any) {
+        console.log(error.message);
+        res.writeHead(500);
+        res.end(
+            JSON.stringify({
+                code: 500,
+                message: ERR_UNEXPECTED_ERROR,
+            })
+        );
     }
 }
