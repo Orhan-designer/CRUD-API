@@ -2,8 +2,8 @@ import { IncomingMessage, ServerResponse } from "http";
 import url from "url";
 import { NotFoundError, ValidationError, UnsupportedMethodError } from "./errors";
 import { ERR_RESOURCE_NOT_FOUND, ERR_UNEXPECTED_ERROR, ERR_UNSUPPORTED_OPERATION } from "./constants";
-import { UserController } from "src/controllers/user.controller";
-import { UserService } from "src/services/user.service";
+import { UserController } from "../controllers/user.controller";
+import { UserService } from "../services/user.service";
 
 const usersService: UserService = new UserService();
 const usersController: UserController = new UserController(usersService);
