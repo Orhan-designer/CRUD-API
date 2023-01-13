@@ -1,5 +1,5 @@
 import { User } from "../entity/user";
-import { IUser } from "../models/users.interface";
+import { IUser } from "../models/users";
 import { v4 as uuid_v4 } from "uuid";
 
 const usersDB: IUser[] = [];

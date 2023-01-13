@@ -7,7 +7,7 @@ import loadBalancer from "./load-balancer";
 import { cpus } from "os";
 import { userPath } from "./constants";
 import { fork } from "child_process";
-import { IUser } from "src/models/users.interface";
+import { IUser } from "src/models/users";
 import { IRequestOptions } from "../models/request";
 
 const PORT: number = +process.env.PORT || 4000;

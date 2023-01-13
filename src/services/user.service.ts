@@ -1,5 +1,5 @@
 import { ERR_USER_ID_INVALID, ERR_USER_NOT_FOUND, validationErrors } from '../app/constants';
-import { IUser } from "../models/users.interface";
+import { IUser } from "../models/users";
 import { validate } from "uuid";
 import { NotFoundError, ValidationError } from "../app/errors";
 import cluster from 'cluster';
