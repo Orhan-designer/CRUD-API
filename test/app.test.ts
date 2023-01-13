@@ -6,7 +6,7 @@ import {
     ERR_RESOURCE_NOT_FOUND,
     ERR_UNSUPPORTED_OPERATION,
     ERR_USER_NOT_FOUND,
-    ERR_INVALID_DATA,
+    ERR_UNEXPECTED_ERROR,
 } from "../src/app/constants";
 import { validate } from "uuid";
 
@@ -111,7 +111,7 @@ describe("Scenario 2: validation", () => {
                 username: "Jest",
                 age: 25,
             };
-            const expected = { code: 400, message: validationErrors.HOBBIES_NOT_EXIST };
+            const expected = { code: 400, message: validationErrors.HOBBIES_IS_INVALID };
             const response = await supertest(workerServer).post(apiUrl).send(JSON.stringify(user));
 
             expect(response.statusCode).toBe(400);
@@ -202,7 +202,7 @@ describe("Scenario 2: validation", () => {
                 username: "Jest",
                 age: 25,
             };
-            const expected = { code: 400, message: validationErrors.HOBBIES_NOT_EXIST };
+            const expected = { code: 400, message: validationErrors.HOBBIES_IS_INVALID };
             const response = await supertest(workerServer).put(`${apiUrl}/${testId}`).send(JSON.stringify(user));
 
             expect(response.statusCode).toBe(400);
@@ -331,7 +331,7 @@ describe("Scenario 3: errors", () => {
         const response = await supertest(workerServer)
             .put(`${apiUrl}/${testId}`)
             .send(JSON.stringify(user) + "error");
-        const expected = { code: 500, message: ERR_INVALID_DATA };
+        const expected = { code: 500, message: ERR_UNEXPECTED_ERROR };
 
         expect(response.statusCode).toBe(500);
         expect(response.body).toEqual(expected);
